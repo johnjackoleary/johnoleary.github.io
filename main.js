@@ -817,7 +817,7 @@ function ToggleHelpText () {
     helpText.innerHTML = 'MOUSE to move/rotate figure | CLICK on a pose for details'
     helpText.innerHTML += '<br>\'c\' to toggle point cloud | SPACEBAR to play'
     helpText.innerHTML += '<br>LEFT/RIGHT change the current pose | UP/DOWN to enter/exit detail view';
-    helpText.innerHTML += '<br>\'r\' to reset view | \'h\' to toggle help text';
+    helpText.innerHTML += '<br>\'r\' to reset view | \'h\' to close help text';
   } else {
     helpText.style.textAlign = 'center';
     helpText.innerHTML = 'Press \'h\' for usage details.';
