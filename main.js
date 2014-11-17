@@ -820,7 +820,8 @@ function ToggleHelpText () {
     helpText.innerHTML += '<br>\'r\' to reset view | \'h\' to toggle help text';
   } else {
     helpText.style.textAlign = 'center';
-    helpText.innerHTML = 'Press \'h\' for more info.';
+    helpText.innerHTML = 'Press \'h\' for usage details.';
+    helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'leary';
   }
 }
 
