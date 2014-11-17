@@ -821,7 +821,7 @@ function ToggleHelpText () {
   } else {
     helpText.style.textAlign = 'center';
     helpText.innerHTML = 'Press \'h\' for usage details.';
-    helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'leary';
+    helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'Leary';
   }
 }
 
