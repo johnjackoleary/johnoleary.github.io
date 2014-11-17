@@ -82,7 +82,7 @@ var point_cloud_geo = new THREE.Geometry();
 
 var radiusAroundObject = 1;
 
-var DATA_DIR         = "../../data/"
+var DATA_DIR         = "data/"
 var POSE_DATA_FILE   = DATA_DIR + "Walter_1/state_BA.txt";
 var IMAGE_DIRECTORY  = DATA_DIR + "Walter_1/tracked_images/";
 var POINT_CLOUD_FILE = DATA_DIR + "Walter_1/point_cloud.txt";
