@@ -55,7 +55,7 @@ var views = {
 
 var DETAILMODE = false;
 var PLAY = false;
-var SHOWHELPTEXT = true;
+var SHOWHELPTEXT = false;
 
 var keyboard = new THREEx.KeyboardState();
 
