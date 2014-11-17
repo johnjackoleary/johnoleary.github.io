@@ -2,6 +2,10 @@ var container, stats;
 
 var interactiveView, scene, renderer;
 
+var containerWidth, containerHeight;
+
+var gui = new dat.GUI();
+
 var testOrbit;
 
 var cameraRig;
@@ -20,7 +24,7 @@ var views = {
           updateCamera: function ( camera, scene, mouseX, mouseY ) {
             // camera.position.x += mouseX * 0.05;
             // camera.position.x = Math.max( Math.min( camera.position.x, 2000 ), -2000 );
-            if (CURRENT_POSE && DETAILMODE) {
+            if (CURRENT_POSE && params.DETAILMODE) {
               // camera.position = CURRENT_POSE.position;
               // var tempVec = new THREE.Vector3(0,0,0);
               // CURRENT_POSE.parent.localToWorld(tempVec);
@@ -53,8 +57,11 @@ var views = {
         } 
       };
 
-var DETAILMODE = false;
-var PLAY = false;
+var params = {
+  DETAILMODE: false,
+  PLAY: false,
+
+}
 var SHOWHELPTEXT = false;
 
 var keyboard = new THREEx.KeyboardState();
@@ -75,7 +82,7 @@ var point_cloud_geo = new THREE.Geometry();
 
 var radiusAroundObject = 1;
 
-var DATA_DIR         = "data/"
+var DATA_DIR         = "../../data/"
 var POSE_DATA_FILE   = DATA_DIR + "Walter_1/state_BA.txt";
 var IMAGE_DIRECTORY  = DATA_DIR + "Walter_1/tracked_images/";
 var POINT_CLOUD_FILE = DATA_DIR + "Walter_1/point_cloud.txt";
@@ -91,6 +98,9 @@ animate();
 
 function init() {
   container = document.getElementById( 'container' );
+  containerWidth = window.innerWidth;
+  containerHeight = window.innerHeight;
+  console.log(containerWidth);
 
   // Help text
   var helpText = document.createElement( 'div' );
@@ -154,7 +164,7 @@ function init() {
   // renderer
   renderer = new THREE.WebGLRenderer( { antialias: true} );
   renderer.setClearColor( 0xffffff, 1 );
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( containerWidth, containerHeight );
   // renderer.enableScissorTest ( true );
 
   container.appendChild( renderer.domElement );
@@ -171,10 +181,10 @@ function init() {
 }
 
 function updateMouse(event) {
-    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    mouse.x = ( event.clientX / containerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / containerHeight ) * 2 + 1;
 
-    if (DETAILMODE) {
+    if (params.DETAILMODE) {
       // mouse.x *=
     }
 }
@@ -210,20 +220,24 @@ function onDocumentMouseMove( event )
 }
 
 function onWindowResize() {
-  views["fullscreen"].camera.aspect = window.innerWidth / window.innerHeight;
+  containerWidth = window.innerWidth;
+  containerHeight = window.innerHeight;
+  console.log(containerWidth);
+
+  views["fullscreen"].camera.aspect = containerWidth / containerHeight;
   views["fullscreen"].camera.updateProjectionMatrix();
 
-  views["detail"].camera.aspect = window.innerWidth / window.innerHeight;
+  views["detail"].camera.aspect = containerWidth / containerHeight;
   views["detail"].camera.updateProjectionMatrix();
 
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( containerWidth, containerHeight );
 
 }
 
 function animate() {
   requestAnimationFrame( animate );
 
-  if (PLAY) {
+  if (params.PLAY) {
     var current_idx = CURRENT_POSE.poseIndex;
     current_idx++;
     if (current_idx >= cameraPoses.length) current_idx = 0;
@@ -245,7 +259,7 @@ function update() {
   for (var i = 0; i < cameraPoses.length; i++) {
     if (CURRENT_POSE == cameraPoses[i]) continue;
     var distance = ray.ray.distanceToPoint(cameraPoses[i].position);
-    if (distance < radiusAroundObject && !DETAILMODE ) {
+    if (distance < radiusAroundObject && !params.DETAILMODE ) {
       // var opacity = (1 - distance/radiusAroundObject)*(1 - distance/radiusAroundObject);
       cameraPoses[i].visible = true;
     } else {
@@ -318,6 +332,9 @@ function update() {
 }
 
 function checkKeyboard() {
+  // if (! keyboard.pressed()) {
+  //   return;
+  // }
   if( keyboard.pressed("c") ) 
     pointCloud.visible = !pointCloud.visible;
 
@@ -329,14 +346,13 @@ function checkKeyboard() {
 
   if (keyboard.pressed("up")) {
     console.log("Entering detail mode.");
-    // views["fullscreen"].camera.aspect = window.innerWidth / window.innerHeight;
+    // views["fullscreen"].camera.aspect = containerWidth / containerHeight;
     // views["fullscreen"].camera.updateProjectionMatrix();
 
-    // views["detail"].camera.aspect = window.innerWidth / window.innerHeight;
+    // views["detail"].camera.aspect = containerWidth / containerHeight;
     // views["detail"].camera.updateProjectionMatrix();
-    DETAILMODE = true;
-    pointCloud.material.size = 0.05
-    pointCloud.material.opacity = 0.6;
+    params.DETAILMODE = true;
+
     // views["fullscreen"].controls.enabled = false;
     // interactiveView = views["detail"];
     // interactiveView.controls.enabled = true;
@@ -348,12 +364,10 @@ function checkKeyboard() {
   }
 
   if (keyboard.pressed("down")) {
-    // views["fullscreen"].camera.aspect = window.innerWidth / window.innerHeight;
+    // views["fullscreen"].camera.aspect = containerWidth / containerHeight;
     // views["fullscreen"].camera.updateProjectionMatrix();
 
-    DETAILMODE = false;
-    pointCloud.material.size = 0.2
-    pointCloud.material.opacity = 0.6;
+    params.DETAILMODE = false;
 
     // views["detail"].controls.enabled = false;
     // interactiveView = views["fullscreen"];
@@ -362,7 +376,7 @@ function checkKeyboard() {
 
   if (CURRENT_POSE) {
     if (keyboard.pressed("space"))
-      PLAY = !PLAY
+      params.PLAY = !params.PLAY
 
     if (keyboard.pressed("left")) {
       var current_idx = CURRENT_POSE.poseIndex;
@@ -382,6 +396,7 @@ function checkKeyboard() {
 
   // Hacky solution, but this makes it only read one key press at a time
   keyboard = new THREEx.KeyboardState();
+  updateGUI();
 }
 
 function AnimateVisiblePoses() {
@@ -392,17 +407,17 @@ function AnimateVisiblePoses() {
 
 function render() {
   renderer.clear();
-  // if (DETAILMODE) { 
+  // if (params.DETAILMODE) { 
   //   for (var key in views) {
   //     view = views[key];
   //     camera = view.camera;
 
   //     view.updateCamera( camera, scene, mouse.x, mouse.y );
 
-  //     var left   = Math.floor( window.innerWidth  * view.left );
-  //     var bottom = Math.floor( window.innerHeight * view.bottom );
-  //     var width  = Math.floor( window.innerWidth  * view.width );
-  //     var height = Math.floor( window.innerHeight * view.height );
+  //     var left   = Math.floor( containerWidth  * view.left );
+  //     var bottom = Math.floor( containerHeight * view.bottom );
+  //     var width  = Math.floor( containerWidth  * view.width );
+  //     var height = Math.floor( containerHeight * view.height );
   //     renderer.setViewport( left, bottom, width, height );
   //     renderer.setScissor( left, bottom, width, height );
 
@@ -410,10 +425,10 @@ function render() {
   //     camera.updateProjectionMatrix();
   //   }
   // } else {
-  //   var left   = Math.floor( window.innerWidth  * view.left );
-  //   var bottom = Math.floor( window.innerHeight * view.bottom );
-  //   var width  = Math.floor( window.innerWidth  * view.width );
-  //   var height = Math.floor( window.innerHeight * view.height );
+  //   var left   = Math.floor( containerWidth  * view.left );
+  //   var bottom = Math.floor( containerHeight * view.bottom );
+  //   var width  = Math.floor( containerWidth  * view.width );
+  //   var height = Math.floor( containerHeight * view.height );
   //   renderer.setViewport( left, bottom, width, height );
   //   renderer.setScissor( left, bottom, width, height );
 
@@ -642,19 +657,19 @@ function createPoses () {
   var geometry = path.createPointsGeometry( verticesInEllipse );
   var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
   var roll_orbital = new THREE.Line( geometry, material );
-  // CURRENT_POSE_OBJECT.add(roll_orbital);
+  CURRENT_POSE_OBJECT.add(roll_orbital);
   var path = new THREE.Path( pitchEllipse.getPoints(verticesInEllipse) );
   var geometry = path.createPointsGeometry( verticesInEllipse );
   var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
   var pitch_orbital = new THREE.Line( geometry, material );
   pitch_orbital.rotation.x = Math.PI / 2.0;
-  // CURRENT_POSE_OBJECT.add(pitch_orbital);
+  CURRENT_POSE_OBJECT.add(pitch_orbital);
   var path = new THREE.Path( yawEllipse.getPoints(verticesInEllipse) );
   var geometry = path.createPointsGeometry( verticesInEllipse );
   var material = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
   var yaw_orbital = new THREE.Line( geometry, material );
   yaw_orbital.rotation.y = Math.PI / 2.0;
-  // CURRENT_POSE_OBJECT.add(yaw_orbital);  
+  CURRENT_POSE_OBJECT.add(yaw_orbital);  
 
   // Add axis to pose
   // x-axis
@@ -694,7 +709,7 @@ function createPoses () {
   var line = new THREE.Line( geometry, material );
   CURRENT_POSE_OBJECT.add( line );
 
-  material = new THREE.MeshLambertMaterial( { color: 0x000088, opacity: 0.5, trasparent: true, wireframe: true } );
+  material = new THREE.MeshLambertMaterial( { color: 0x000088, opacity: 0.25, trasparent: true, wireframe: true } );
   geometry = new THREE.SphereGeometry( radius );
   var shell = new THREE.Mesh( geometry, material );
   CURRENT_POSE_OBJECT.add(shell);
@@ -723,9 +738,9 @@ function createPointCloud() {
 
   // material
   var material = new THREE.PointCloudMaterial( {
-      size: 0.2,
+      size: 0.1,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.4,
       vertexColors: THREE.VertexColors
   } );
 
@@ -772,8 +787,11 @@ function UpdateForNewPose (centerOfPose) {
   console.log(CURRENT_POSE.imagefile);
 
   // This doesn't really work :(
-  // if (!CURRENT_POSE.imageTexture)
-  //   CURRENT_POSE.imageTexture = THREE.ImageUtils.loadTexture( CURRENT_POSE.imagefile );
+  var endIndex = Math.min(cameraPoses.length-1, CURRENT_POSE.poseIndex + 15);
+  for (var i = CURRENT_POSE.poseIndex; i < endIndex; i++) { // load the next ten textures
+    if (!cameraPoses[i].imageTexture)
+      cameraPoses[i].imageTexture = THREE.ImageUtils.loadTexture( cameraPoses[i].imagefile );
+  }
 
   // CURRENT_IMAGE_TEXTURE = CURRENT_POSE.imageTexture;
   // sceneBoundingBox.material.map = CURRENT_IMAGE_TEXTURE;
@@ -784,7 +802,7 @@ function ResetView() {
   for (var key in views) {
     var view = views[key];
     if (!view.camera) {
-      camera = new THREE.PerspectiveCamera( view.fov, window.innerWidth / window.innerHeight, view.near, 1000 );
+      camera = new THREE.PerspectiveCamera( view.fov, containerWidth / containerHeight, view.near, 1000 );
       camera.up.x = view.up[ 0 ];
       camera.up.y = view.up[ 1 ];
       camera.up.z = view.up[ 2 ];
@@ -803,7 +821,7 @@ function ResetView() {
     camera.lookAt(sceneBoundingBox.position);
     camera.updateProjectionMatrix();
   }
-  // DETAILMODE = false;
+  // params.DETAILMODE = false;
   // views["detail"].controls.enabled = false;
   interactiveView = views["fullscreen"];
   // interactiveView.controls.enabled = true;
@@ -822,7 +840,7 @@ function ToggleHelpText () {
     helpText.style.textAlign = 'center';
     helpText.innerHTML = 'Press \'h\' for usage details.';
   }
-  helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'Leary';
+    helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'Leary';
 }
 
 function GetImageFile(id) {
@@ -947,4 +965,34 @@ function PoseObject(poseIndex) {
   //   texture.wrapT = THREE.RepeatWrapping;
   // }
 
+}
+
+// Set up gui
+window.onload = function() {
+  // var text = new FizzyText();
+  gui.add(params, 'PLAY');
+  gui.add(params, 'DETAILMODE');
+
+  var cloudGui = gui.addFolder("Point Cloud");
+  cloudGui.add(pointCloud, 'visible');
+  cloudGui.add(pointCloud.material, 'size', 0, 0.3);
+  cloudGui.add(pointCloud.material, 'opacity', 0, 1.0);
+  cloudGui.open();
+
+  var trajectoriesGui = gui.addFolder("Trajectory 1");
+  trajectoriesGui.add(trajectory_drawing.material, 'visible');
+};
+
+function updateGUI() {
+  // console.log("LOOL");
+  // Iterate over all controllers
+  for (var i in gui.__controllers) {
+    gui.__controllers[i].updateDisplay();
+  }
+
+  for (var folder in gui.__folders) {
+    for (var j in gui.__folders[folder].__controllers) {
+      gui.__folders[folder].__controllers[j].updateDisplay();
+    }
+  }
 }
