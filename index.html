@@ -1,9 +1,9 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Sandbox</title>
-    <style>
+	<head>
+		<meta charset="utf-8" />
+		<title>Sandbox</title>
+		<style>
 body {
   color: #000;
   font-family:Monospace;
@@ -20,21 +20,33 @@ body {
     width:50%
     height:100%;
 }*/
-    </style>
-  </head>
-  <body>
+		</style>
+	</head>
+	<body>
+		<!-- Enable jQuery -->
+		<!-- // <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script> -->
 
-    <script src="core/three.min.js"></script>
-    <script src="core/js/controls/OrbitControls.js"></script>
-    <script src='core/KeyboardState.js'></script>
-    <script type="text/javascript" src="core/dat.gui.min.js"></script>
+		<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script> 
+		<script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/OrbitControls.js"></script>
+		<script src="../core/Three.js"></script>
+		<script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/three.min.js"></script> -->
 
-    <div id="container"></div> 
-    <script type="text/javascript" src="camera_poses.js"></script>
-    <script type="text/javascript" src="point_cloud.js"></script>
-    <script type="text/javascript" src="test_pose_error.js"></script>
+		<script src="core/three.min.js"></script>
+		<script src="core/js/controls/OrbitControls.js"></script>
+		<script src='core/KeyboardState.js'></script>
+		<script type="text/javascript" src="core/dat.gui.min.js"></script>
+		<!-- // <script type="text/javascript" src="../core/js/Octree.js"></script> -->
 
-    <script type="text/javascript" src="main.js"></script>
+		<div id="container"></div> 
+		<!-- // <script type="text/javascript" src="camera_poses.js"></script> -->
+		<script type="text/javascript" src="walter_1_traj.js"></script>
+		<script type="text/javascript" src="walter_2_traj.js"></script>
+		<script type="text/javascript" src="walter_3_traj.js"></script>
+		<script type="text/javascript" src="walter_4_traj.js"></script>
 
-  </body>
+		<script type="text/javascript" src="point_cloud.js"></script>
+		<script type="text/javascript" src="fake_pose_error.js"></script>
+
+		<script type="text/javascript" src="main.js"></script>
+	</body>
 </html>
