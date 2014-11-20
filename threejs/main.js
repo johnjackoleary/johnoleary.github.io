@@ -55,9 +55,10 @@ var views = {
 var params = {
   FirstPerson: false,
   Play: false,
-  CenterImage: false
+  CenterImage: false,
+  FrameRate: 50,
 }
-var SHOWHELPTEXT = false;
+var MAXFRAMERATE = 100;
 
 var keyboard = new THREEx.KeyboardState();
 
@@ -98,27 +99,6 @@ function init() {
   container = document.getElementById( 'container' );
   containerWidth = window.innerWidth;
   containerHeight = window.innerHeight;
-  // console.log(containerWidth);
-
-  // // Help text
-  // var helpText = document.createElement( 'div' );
-  // helpText.id = 'helpText'
-  // helpText.style.position = 'absolute';
-  // helpText.style.top = '10px';
-  // helpText.style.width = '100%';
-  // helpText.style.fontSize = '12px';
-  // container.appendChild( helpText );
-  // ToggleHelpText();
-
-  // Create image viewer
-  // var image_viewer = document.createElement( 'div' );
-  // image_viewer.style.position = 'absolute';
-  // image_viewer.style.top = '10px';
-  // image_viewer.style.left = '10px';
-  // image_viewer.style.visibility = 'hidden';
-  // image_viewer.innerHTML += '<img src="" alt="" id="currentImage" height="240" width="320">';
-  // container.appendChild( image_viewer );
-
 
   scene = new THREE.Scene();
   // scene.autoUpdate = false;
@@ -234,47 +214,10 @@ function onDocumentMouseDown( event ) {
 
 function onDocumentMouseMove( event ) 
 {
-  // the following line would stop any other event handler from firing
-  // (such as the mouse's TrackballControls)
-  // event.preventDefault();
-  
   // update the mouse variable
   updateMouse(event);
-}
 
-function onWindowResize() {
-  containerWidth = window.innerWidth;
-  containerHeight = window.innerHeight;
-  // console.log(containerWidth);
-
-  views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
-  views["ThirdPerson"].camera.updateProjectionMatrix();
-
-  views["FirstPerson"].camera.aspect = containerWidth / containerHeight;
-  views["FirstPerson"].camera.updateProjectionMatrix();
-
-  frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
-  renderer.setSize( containerWidth, containerHeight );
-
-}
-
-function animate() {
-  requestAnimationFrame( animate );
-
-  if (params.Play) {
-    var current_idx = CURRENT_POSE.poseIndex;
-    current_idx++;
-    if (current_idx >= cameraPoses.length) current_idx = 0;
-    UpdateForNewPose(cameraPoses[current_idx]);
-  }
-
-  // interactiveView.controls.update();
-  update();
-  render();
-}
-
-function update() {
-    // create a Ray with origin at the mouse position
+   // create a Ray with origin at the mouse position
   //   and direction into the scene (views["ThirdPerson"].camera direction)
   var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
   // projector.unprojectVector( vector, views["ThirdPerson"].camera );
@@ -342,14 +285,48 @@ function update() {
     //     by setting current intersection object to "nothing"
     INTERSECTED = null;
   }
+}
 
+function onWindowResize() {
+  containerWidth = window.innerWidth;
+  containerHeight = window.innerHeight;
+  // console.log(containerWidth);
+
+  views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
+  views["ThirdPerson"].camera.updateProjectionMatrix();
+
+  views["FirstPerson"].camera.aspect = containerWidth / containerHeight;
+  views["FirstPerson"].camera.updateProjectionMatrix();
+
+  frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
+  renderer.setSize( containerWidth, containerHeight );
+
+}
+
+function animate() {
+  setTimeout( function() {
+    requestAnimationFrame( animate );
+  }, MAXFRAMERATE - params.FrameRate );
+
+  if (params.Play) {
+    var current_idx = CURRENT_POSE.poseIndex;
+    current_idx++;
+    if (current_idx >= cameraPoses.length) current_idx = 0;
+    UpdateForNewPose(cameraPoses[current_idx]);
+  }
+
+  // interactiveView.controls.update();
+  update();
+  render();
+  TWEEN.update();
+}
+
+function update() {
   checkKeyboard();
-  AnimateVisiblePoses();
-
 
   // Basically, find the furthest possible point from the camera, and set that to be black.
   // Then find the closest possible point, and set that to be white
-  if (pointCloud.visible) {
+  if (pointCloud.visible && false) {
     var cameraDistance = camera.position.distanceTo(point_cloud_geo.boundingSphere.center);
     var pointCloudRadius = point_cloud_geo.boundingSphere.radius;
     var farthestDistance;
@@ -375,35 +352,12 @@ function update() {
   }
 }
 
+var oldCameraPosition;
+var oldCameraQuat;
+
 function checkKeyboard() {
-  if (keyboard.pressed("up")) {
-    console.log("Entering FirstPerson mode.");
-    // views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
-    // views["ThirdPerson"].camera.updateProjectionMatrix();
-
-    // views["FirstPerson"].camera.aspect = containerWidth / containerHeight;
-    // views["FirstPerson"].camera.updateProjectionMatrix();
-    params.FirstPerson = true;
-
-    // views["ThirdPerson"].controls.enabled = false;
-    // interactiveView = views["FirstPerson"];
-    // interactiveView.controls.enabled = true;
-    ResetView();  
-    view = views["ThirdPerson"];
-    camera = view.camera;
-    view.updateCamera( camera, scene, mouse.x, mouse.y );
-    camera.updateProjectionMatrix();
-  }
-
-  if (keyboard.pressed("down")) {
-    // views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
-    // views["ThirdPerson"].camera.updateProjectionMatrix();
-
-    params.FirstPerson = false;
-
-    // views["FirstPerson"].controls.enabled = false;
-    // interactiveView = views["ThirdPerson"];
-    // interactiveView.controls.enabled = true;
+  if (keyboard.pressed("up") || keyboard.pressed("down")) {
+    TogglePerspective();
   }
 
   if (CURRENT_POSE) {
@@ -425,12 +379,6 @@ function checkKeyboard() {
 
   // Hacky solution, but this makes it only read one key press at a time
   keyboard = new THREEx.KeyboardState();
-}
-
-function AnimateVisiblePoses() {
-  // for (var i = 0; i < cameraPoses.length; i++) {
-  //   poseObject = cameraPoses[i].parent;
-  // }
 }
 
 function render() {
@@ -456,33 +404,7 @@ function render() {
       ImageViewer.translateY(-(frustumHeight / 2.0) + (4.8 * imageScale / 2.0));
     }
   }
-  // if (params.FirstPerson) { 
-  //   for (var key in views) {
-  //     view = views[key];
-  //     camera = view.camera;
 
-  //     view.updateCamera( camera, scene, mouse.x, mouse.y );
-
-  //     var left   = Math.floor( containerWidth  * view.left );
-  //     var bottom = Math.floor( containerHeight * view.bottom );
-  //     var width  = Math.floor( containerWidth  * view.width );
-  //     var height = Math.floor( containerHeight * view.height );
-  //     renderer.setViewport( left, bottom, width, height );
-  //     renderer.setScissor( left, bottom, width, height );
-
-  //     camera.aspect = width / height;
-  //     camera.updateProjectionMatrix();
-  //   }
-  // } else {
-  //   var left   = Math.floor( containerWidth  * view.left );
-  //   var bottom = Math.floor( containerHeight * view.bottom );
-  //   var width  = Math.floor( containerWidth  * view.width );
-  //   var height = Math.floor( containerHeight * view.height );
-  //   renderer.setViewport( left, bottom, width, height );
-  //   renderer.setScissor( left, bottom, width, height );
-
-  //   camera.aspect = width / height;
-  // }
   renderer.render( scene, camera );
 }
 
@@ -499,10 +421,6 @@ function createImageViewer() {
   var material = new THREE.MeshBasicMaterial( {side: THREE.DoubleSide, map: texture, 
                                                 opacity: 1.0, transparent: true} );
   ImageViewer = new THREE.Mesh( geometry, material );
-
-  // sceneBoundingBox.matrixAutoUpdate = false;
-  // sceneBoundingBox.updateMatrix = false;
-  // sceneBoundingBox.rotationAutoUpdate = false;
 
   scene.add( ImageViewer );
 }
@@ -704,15 +622,13 @@ function createTrajectory() {
 }
 
 function createPoses () {
+  var sphereGeometry = new THREE.SphereGeometry( 0.1 );
   for (var trajNum = 0; trajNum < camera_poses.length; trajNum++) {
     var totalPoses = camera_poses[trajNum].length/16;
-    var scene_coord_rotation = new THREE.Quaternion();
-    scene_coord_rotation.setFromAxisAngle( new THREE.Vector3( 1, 1, 1 ), Math.PI /2 );
     for ( var i = 0; i < totalPoses; i++) {
       // Add the core of the object
       var camera_array_index = i * 16;
       var image_num = i * intervalBetweenPoses + startingImageId[trajNum];
-      var sphereGeometry = new THREE.SphereGeometry( 0.1 );
       var material = new THREE.MeshLambertMaterial( { color: 0x000000, transparent: true } );
       var centerPose = new THREE.Mesh( sphereGeometry, material );
       centerPose.poseIndex = cameraPoses.length; 
@@ -728,7 +644,7 @@ function createPoses () {
                                 -camera_poses[trajNum][camera_array_index + 1], 
                                 -camera_poses[trajNum][camera_array_index + 2], 
                                 camera_poses[trajNum][camera_array_index + 3] )
-      // centerPose.quaternion.multiply(scene_coord_rotation);
+      centerPose.visible = false;
       cameraPoses.push(centerPose);
       scene.add(centerPose);
     }
@@ -822,7 +738,8 @@ function createPointCloud() {
   var colors = [];
   for( var i = 0; i < point_cloud_geo.vertices.length; i++ ) {
       colors[i] = new THREE.Color();
-      colors[i].setRGB(point_cloud[i][3]/255.0, point_cloud[i][4]/255.0, point_cloud[i][5]/255.0);
+      // colors[i].setRGB(point_cloud[i][3]/255.0, point_cloud[i][4]/255.0, point_cloud[i][5]/255.0);
+      colors[i].setRGB(1,1,1);
   }
   point_cloud_geo.colors = colors;
 
@@ -924,35 +841,92 @@ function ResetView() {
   // interactiveView.controls.enabled = true;
 }
 
-// function ToggleHelpText () {
-  // SHOWHELPTEXT = !SHOWHELPTEXT;
-  // var helpText = document.getElementById( 'helpText' );
-  // if (SHOWHELPTEXT) {
-  //   helpText.style.textAlign = 'center';
-  //   helpText.innerHTML = 'MOUSE to move/rotate figure | CLICK on a pose for details'
-  //   helpText.innerHTML += '<br>\'c\' to toggle point cloud | SPACEBAR to Play'
-  //   helpText.innerHTML += '<br>LEFT/RIGHT change the current pose | UP/DOWN to enter/exit ThirdPerson view';
-  //   helpText.innerHTML += '<br>\'r\' to reset view | \'h\' to close help text';
-  // } else {
-  //   helpText.style.textAlign = 'center';
-  //   helpText.innerHTML = 'Press \'h\' for usage details.';
-  // }
-  //   // helpText.innerHTML += '<br>Visualization created by Joshua Ford, Devin Lange, and John O\'Leary';
-// }
-
 function GetImageFile(id) {
   var name = id.length >= 8 ? id : new Array(8 - id.length + 1).join('0') + id;
   return name + ".jpg";
 }
 
+function TogglePerspective() {
+  // console.log(perspective)
+  if (params.FirstPerson) {
+    var camPosition = views["ThirdPerson"].camera.position.clone();
+    var camQuat = views["ThirdPerson"].camera.quaternion.clone();
+    
+    var tween = new TWEEN.Tween(camPosition).to(oldCameraPosition, 2000).easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () {
+          views["ThirdPerson"].camera.position.x = camPosition.x;
+          views["ThirdPerson"].camera.position.y = camPosition.y;
+          views["ThirdPerson"].camera.position.z = camPosition.z;
+        }).onComplete(function () {
+          // views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
+          // views["ThirdPerson"].camera.updateProjectionMatrix();
+          
+          params.FirstPerson = false;
+          
+          // views["FirstPerson"].controls.enabled = false;
+          // interactiveView = views["ThirdPerson"];
+          // interactiveView.controls.enabled = true;
+        }).start();
+    var tween = new TWEEN.Tween(camQuat).to(oldCameraQuat, 2000)
+    .easing(TWEEN.Easing.Linear.None).onUpdate(function () {
+      // Need this line otherwise, we get an error
+      camQuat.onChangeCallback = function() {};
+      var newRotation = new THREE.Quaternion(camQuat.x, camQuat.y, camQuat.z, camQuat.w);
+      views["ThirdPerson"].camera.quaternion.x = newRotation.x;
+      views["ThirdPerson"].camera.quaternion.y = newRotation.y;
+      views["ThirdPerson"].camera.quaternion.z = newRotation.z;
+      views["ThirdPerson"].camera.quaternion.w = newRotation.w;
+    }).onComplete(function () {}).start();
+
+  } else {
+    var camPosition = views["ThirdPerson"].camera.position.clone();
+    oldCameraPosition = camPosition.clone();
+    var camQuat = views["ThirdPerson"].camera.quaternion.clone();
+    oldCameraQuat = camQuat.clone();
+    
+    var targetQuat = new THREE.Quaternion(CURRENT_POSE.quaternion.x, CURRENT_POSE.quaternion.y,
+                                          CURRENT_POSE.quaternion.z, CURRENT_POSE.quaternion.w);
+    targetQuat.multiply(new THREE.Quaternion().setFromAxisAngle(XAXIS, Math.PI));
+    
+    var tween = new TWEEN.Tween(camPosition).to(CURRENT_POSE_OBJECT.position, 2000).easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () {
+          views["ThirdPerson"].camera.position.x = camPosition.x;
+          views["ThirdPerson"].camera.position.y = camPosition.y;
+          views["ThirdPerson"].camera.position.z = camPosition.z;
+        }).onComplete(function () {
+          params.FirstPerson = true;
+
+          // views["ThirdPerson"].controls.enabled = false;
+          // interactiveView = views["FirstPerson"];
+          // interactiveView.controls.enabled = true;
+          ResetView();  
+          view = views["ThirdPerson"];
+          camera = view.camera;
+          view.updateCamera( camera, scene, mouse.x, mouse.y );
+          camera.updateProjectionMatrix();
+         }).start();
+    var tween = new TWEEN.Tween(camQuat).to(targetQuat, 2000)
+        .easing(TWEEN.Easing.Linear.None).onUpdate(function () {
+           // Need this line otherwise, we get an error
+           camQuat.onChangeCallback = function() {};
+           var newRotation = new THREE.Quaternion(camQuat.x, camQuat.y, camQuat.z, camQuat.w);
+           views["ThirdPerson"].camera.quaternion.x = newRotation.x;
+           views["ThirdPerson"].camera.quaternion.y = newRotation.y;
+           views["ThirdPerson"].camera.quaternion.z = newRotation.z;
+           views["ThirdPerson"].camera.quaternion.w = newRotation.w;
+             }).onComplete(function () {}).start();
+  }
+    
+}
+
 // Set up gui
 window.onload = function() {
-  var resetObj = { 'Reset View': function(){ ResetView() }};
+  var resetObj = { 'Reset Camera': function(){ ResetView() }};
+  var togglePersp = { 'Switch View': function() { TogglePerspective() }}
 
-  gui.add(resetObj,'Reset View');
+  gui.add(resetObj,'Reset Camera');
+  gui.add(togglePersp,'Switch View');
   gui.add(params, 'Play');
-  gui.add(params, 'FirstPerson')
-  gui.add(params, 'CenterImage')
+  gui.add(params, 'CenterImage');
+  gui.add(params, 'FrameRate', 0, MAXFRAMERATE);
   // gui.add(interactiveView.camera, 'near', 0.01, 10);
 
   var imageGui = gui.addFolder("Image Viewer");
@@ -976,9 +950,5 @@ window.onload = function() {
                                                       for (var i in shadow) {shadow[i].material.visible = !shadow[i].material.visible;}}};
   contextGUI.add(toggleVis, 'Toggle Visibility');
 
-  contextGUI.open();
-  // trajectoriesGui.add(trajectory_drawing[1].material, 'visible');
-  // trajectoriesGui.add(trajectory_drawing[2].material, 'visible');
-  // trajectoriesGui.add(trajectory_drawing[3].material, 'visible');
-  // gui.close();
+  // contextGUI.open();
 };
