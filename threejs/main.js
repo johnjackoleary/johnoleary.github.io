@@ -376,13 +376,6 @@ function update() {
 }
 
 function checkKeyboard() {
-  // if (! keyboard.pressed()) {
-  //   return;
-  // }
-
-  if ( keyboard.pressed("r") )
-    ResetView();
-
   if (keyboard.pressed("up")) {
     console.log("Entering FirstPerson mode.");
     // views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
@@ -444,15 +437,19 @@ function render() {
   renderer.clear();
 
   if (ImageViewer.visible) {
-      ImageViewer.rotation.copy( camera.rotation );
-      ImageViewer.position.copy( camera.position );
-      ImageViewer.updateMatrix();
     if (params.CenterImage) {
+      ImageViewer.rotation.copy( CURRENT_POSE.rotation );
+      ImageViewer.position.copy( CURRENT_POSE.position );
+      ImageViewer.rotateOnAxis(XAXIS, Math.PI);
+      ImageViewer.updateMatrix();
       var imageScale = 0.5;
       ImageViewer.scale.set(imageScale, imageScale, imageScale);
       ImageViewer.translateZ( - 3.5 );
     } else {
       var imageScale = 0.2;
+      ImageViewer.rotation.copy( camera.rotation );
+      ImageViewer.position.copy( camera.position );
+      ImageViewer.updateMatrix();
       ImageViewer.scale.set(imageScale, imageScale, imageScale);
       ImageViewer.translateZ( - (interactiveView.camera.near + 0.1) );
       ImageViewer.translateX(-(frustumHeight * camera.aspect / 2.0) + (6.4 * imageScale / 2.0)); // Add back half the image width
@@ -500,7 +497,7 @@ function createImageViewer() {
   var texture = THREE.ImageUtils.loadTexture( CONTEXT_BOX_TEXTURE );
 
   var material = new THREE.MeshBasicMaterial( {side: THREE.DoubleSide, map: texture, 
-                                                opacity: 0.7, transparent: true} );
+                                                opacity: 1.0, transparent: true} );
   ImageViewer = new THREE.Mesh( geometry, material );
 
   // sceneBoundingBox.matrixAutoUpdate = false;
