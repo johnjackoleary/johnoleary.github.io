@@ -193,17 +193,16 @@ function onDocumentMouseUp( event ) {
   var intersects = ray.intersectObjects( cameraPoses );
 
   // if there is one (or more) intersections
-  if ( intersects.length > 0 && intersects[ 0 ].object == CLICKED_POSE) {
+  if ( intersects.length > 0 && intersects[ 0 ].object == CLICKED_POSE) 
     UpdateForNewPose(intersects[ 0 ].object);
-  } else {
-    CLICKED_POSE = null;
-  }
+  CLICKED_POSE = null;
 }
 
 function onDocumentMouseDown( event ) {
   // update the mouse variable
   updateMouse(event);
 
+  if (params.FirstPerson) return;
   // display nearby images
   // create a Ray with origin at the mouse position
   // and direction into the scene (views["ThirdPerson"].camera direction)
@@ -336,7 +335,7 @@ function update() {
 
   // Basically, find the furthest possible point from the camera, and set that to be black.
   // Then find the closest possible point, and set that to be white
-  if (pointCloud.visible && false) {
+  if (false && pointCloud.visible) {
     var cameraDistance = camera.position.distanceTo(point_cloud_geo.boundingSphere.center);
     var pointCloudRadius = point_cloud_geo.boundingSphere.radius;
     var farthestDistance;
@@ -344,7 +343,7 @@ function update() {
       farthestDistance = 2 * pointCloudRadius;
       for( var i = 0; i < point_cloud_geo.vertices.length; i++ ) {
           var distance = camera.position.distanceTo(pointCloud.geometry.vertices[i]) - cameraDistance + pointCloudRadius;
-          distance = 1.1 - (distance/farthestDistance);
+          distance = 1.0 - (distance/farthestDistance);
           pointCloud.geometry.colors[i].setRGB(distance, distance, distance);
           // pointCloud.geometry.colors[i].setHSL(0, 1.0, distance);
       }
@@ -352,7 +351,7 @@ function update() {
       farthestDistance = pointCloudRadius + cameraDistance;
       for( var i = 0; i < point_cloud_geo.vertices.length; i++ ) {
           var distance = camera.position.distanceTo(pointCloud.geometry.vertices[i]);
-          distance = 1.1 - (distance/farthestDistance);
+          distance = 1.0 - (distance/farthestDistance);
           pointCloud.geometry.colors[i].setRGB(distance, distance, distance);
           // pointCloud.geometry.colors[i].setHSL(0, 1.0, distance);
       }
@@ -753,8 +752,10 @@ function createPointCloud() {
 }
 
 function RestorePose(centerOfPose) {
-  if (CURRENT_POSE != centerOfPose) // don't change the current pose
-    centerOfPose.material.color.setHex(0x000000);
+  if (CURRENT_POSE == centerOfPose) return; // don't change the current pose
+
+  centerOfPose.material.color.setHex(0x000000);
+  centerOfPose.visible = false;
 }
 
 function UpdateForNewPose (centerOfPose) {
@@ -834,7 +835,7 @@ function ResetView() {
     camera.lookAt(sceneBoundingBox.position);
     camera.updateProjectionMatrix();
   }
-  // params.FirstPerson = false;
+  params.FirstPerson = false;
   // views["FirstPerson"].controls.enabled = false;
   interactiveView = views["ThirdPerson"];
   frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
@@ -917,7 +918,7 @@ window.onload = function() {
   // gui.add(interactiveView.camera, 'near', 0.01, 10);
 
   var imageGui = gui.addFolder("Camera Image Viewer");
-  imageGui.add(ImageViewer, 'visible');
+  imageGui.add(ImageViewer, 'visible').onChange(function(value) { UpdateForNewPose(CURRENT_POSE); });
   imageGui.add(ImageViewer.material, 'opacity', 0, 1.0);
   imageGui.open();
 
