@@ -153,7 +153,7 @@ function init() {
   ResetView();
 
   // renderer
-  renderer = new THREE.WebGLRenderer( { antialias: true} );
+  renderer = Detector.webgl ? new THREE.WebGLRenderer({ antialias: true}) : alert("Your browser does not support WebGL.\nYou may be able to enable it on Safari or Firefox.\nIt should work by default on Google Chrome.");
   renderer.setClearColor( 0x000000, 1 );
   renderer.setSize( containerWidth, containerHeight );
   // renderer.enableScissorTest ( true );
@@ -924,7 +924,7 @@ window.onload = function() {
 
   var trajectoriesGui = gui.addFolder("Trajectories");
   for (var i = 0; i < NumberOfTrajectories; i++)
-    trajectoriesGui.add(trajectory_drawing[i].material, 'visible');
+    trajectoriesGui.add(trajectory_drawing[i].material, 'visible').name("Toggle " + (i+1) );
   // trajectoriesGui.open();
 
   var contextGUI = gui.addFolder("Plane and Shadow");
