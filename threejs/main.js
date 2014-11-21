@@ -7,6 +7,7 @@ var containerWidth, containerHeight;
 var gui = new dat.GUI();
 
 var XAXIS = new THREE.Vector3(1,0,0);
+var XAXISQUAT = new THREE.Quaternion().setFromAxisAngle(XAXIS, Math.PI);
 
 var cameraRig;
 var views = {
@@ -55,10 +56,11 @@ var views = {
 var params = {
   FirstPerson: false,
   Play: false,
-  CenterImage: false,
-  FrameRate: 50,
+  Speed: 50,
+  'Top Left Image': true,
 }
 var MAXFRAMERATE = 100;
+var MINFRAMERATE = 10;
 
 var keyboard = new THREEx.KeyboardState();
 
@@ -99,6 +101,14 @@ function init() {
   container = document.getElementById( 'container' );
   containerWidth = window.innerWidth;
   containerHeight = window.innerHeight;
+
+  var image_viewer = document.createElement( 'div' );
+  image_viewer.style.position = 'absolute';
+  image_viewer.style.top = '10px';
+  image_viewer.style.left = '10px';
+  image_viewer.style.visibility = 'visible';
+  image_viewer.innerHTML += '<img src="" alt="" id="currentImage" height="240" width="320">';
+  container.appendChild( image_viewer );
 
   scene = new THREE.Scene();
   // scene.autoUpdate = false;
@@ -306,7 +316,7 @@ function onWindowResize() {
 function animate() {
   setTimeout( function() {
     requestAnimationFrame( animate );
-  }, MAXFRAMERATE - params.FrameRate );
+  }, MAXFRAMERATE - params.Speed - MINFRAMERATE);
 
   if (params.Play) {
     var current_idx = CURRENT_POSE.poseIndex;
@@ -353,7 +363,7 @@ function update() {
 }
 
 var oldCameraPosition;
-var oldCameraQuat;
+var oldCameraRot;
 
 function checkKeyboard() {
   if (keyboard.pressed("up") || keyboard.pressed("down")) {
@@ -383,27 +393,6 @@ function checkKeyboard() {
 
 function render() {
   renderer.clear();
-
-  if (ImageViewer.visible) {
-    if (params.CenterImage) {
-      ImageViewer.rotation.copy( CURRENT_POSE.rotation );
-      ImageViewer.position.copy( CURRENT_POSE.position );
-      ImageViewer.rotateOnAxis(XAXIS, Math.PI);
-      ImageViewer.updateMatrix();
-      var imageScale = 0.5;
-      ImageViewer.scale.set(imageScale, imageScale, imageScale);
-      ImageViewer.translateZ( - 3.5 );
-    } else {
-      var imageScale = 0.2;
-      ImageViewer.rotation.copy( camera.rotation );
-      ImageViewer.position.copy( camera.position );
-      ImageViewer.updateMatrix();
-      ImageViewer.scale.set(imageScale, imageScale, imageScale);
-      ImageViewer.translateZ( - (interactiveView.camera.near + 0.1) );
-      ImageViewer.translateX(-(frustumHeight * camera.aspect / 2.0) + (6.4 * imageScale / 2.0)); // Add back half the image width
-      ImageViewer.translateY(-(frustumHeight / 2.0) + (4.8 * imageScale / 2.0));
-    }
-  }
 
   renderer.render( scene, camera );
 }
@@ -745,7 +734,7 @@ function createPointCloud() {
 
   // material
   var material = new THREE.PointCloudMaterial( {
-      size: 0.1,
+      size: 0.05,
       transparent: true,
       opacity: 0.4,
       vertexColors: THREE.VertexColors
@@ -778,7 +767,7 @@ function UpdateForNewPose (centerOfPose) {
   CURRENT_POSE.visible = true;
   CURRENT_POSE.material.color.setHex(0xffff00);
 
-  CURRENT_POSE_OBJECT.visible = !params.FirstPerson;
+  CURRENT_POSE_OBJECT.visible = true;
   // if (oldPose)
   //   CURRENT_POSE_OBJECT.applyMatrix( new THREE.Matrix4().makeScale( CURRENT_POSE.poseError[0]/oldPose.poseError[0], 
   //                                                                 CURRENT_POSE.poseError[1]/oldPose.poseError[1], 
@@ -800,6 +789,14 @@ function UpdateForNewPose (centerOfPose) {
   camera.updateProjectionMatrix();
 
   if (ImageViewer.visible) {
+    ImageViewer.rotation.copy( CURRENT_POSE.rotation );
+    ImageViewer.position.copy( CURRENT_POSE.position );
+    ImageViewer.rotateOnAxis(XAXIS, Math.PI);
+    ImageViewer.updateMatrix();
+    var imageScale = 0.5;
+    ImageViewer.scale.set(imageScale, imageScale, imageScale);
+    ImageViewer.translateZ( - 3.5 );
+
     var endIndex = Math.min(cameraPoses.length-1, CURRENT_POSE.poseIndex + 15);
     for (var i = CURRENT_POSE.poseIndex; i < endIndex; i++) { // load the next ten textures
       if (!cameraPoses[i].imageTexture)
@@ -808,6 +805,9 @@ function UpdateForNewPose (centerOfPose) {
 
     ImageViewer.material.map = CURRENT_POSE.imageTexture;
   }
+
+  // document.getElementById("currentImage").style.visibility = 'visible';
+  document.getElementById("currentImage").src = CURRENT_POSE.imagefile;
 }
 
 function ResetView() {
@@ -846,72 +846,51 @@ function GetImageFile(id) {
   return name + ".jpg";
 }
 
+var targetRot = new THREE.Euler();
 function TogglePerspective() {
   // console.log(perspective)
   if (params.FirstPerson) {
+    params.FirstPerson = false;
     var camPosition = views["ThirdPerson"].camera.position.clone();
-    var camQuat = views["ThirdPerson"].camera.quaternion.clone();
+    var camRot = views["ThirdPerson"].camera.rotation.clone();
     
     var tween = new TWEEN.Tween(camPosition).to(oldCameraPosition, 2000).easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () {
           views["ThirdPerson"].camera.position.x = camPosition.x;
           views["ThirdPerson"].camera.position.y = camPosition.y;
           views["ThirdPerson"].camera.position.z = camPosition.z;
-        }).onComplete(function () {
-          // views["ThirdPerson"].camera.aspect = containerWidth / containerHeight;
-          // views["ThirdPerson"].camera.updateProjectionMatrix();
-          
-          params.FirstPerson = false;
-          
-          // views["FirstPerson"].controls.enabled = false;
-          // interactiveView = views["ThirdPerson"];
-          // interactiveView.controls.enabled = true;
-        }).start();
-    var tween = new TWEEN.Tween(camQuat).to(oldCameraQuat, 2000)
+        }).onComplete(function () {}).start();
+    var tween = new TWEEN.Tween(camRot).to(oldCameraRot, 2000)
     .easing(TWEEN.Easing.Linear.None).onUpdate(function () {
       // Need this line otherwise, we get an error
-      camQuat.onChangeCallback = function() {};
-      var newRotation = new THREE.Quaternion(camQuat.x, camQuat.y, camQuat.z, camQuat.w);
-      views["ThirdPerson"].camera.quaternion.x = newRotation.x;
-      views["ThirdPerson"].camera.quaternion.y = newRotation.y;
-      views["ThirdPerson"].camera.quaternion.z = newRotation.z;
-      views["ThirdPerson"].camera.quaternion.w = newRotation.w;
+      camRot.onChangeCallback = function() {};
+      var newRotation = new THREE.Euler(camRot.x, camRot.y, camRot.z);
+      views["ThirdPerson"].camera.rotation.x = newRotation.x;
+      views["ThirdPerson"].camera.rotation.y = newRotation.y;
+      views["ThirdPerson"].camera.rotation.z = newRotation.z;
     }).onComplete(function () {}).start();
 
   } else {
+    params.FirstPerson = true;
     var camPosition = views["ThirdPerson"].camera.position.clone();
     oldCameraPosition = camPosition.clone();
-    var camQuat = views["ThirdPerson"].camera.quaternion.clone();
-    oldCameraQuat = camQuat.clone();
-    
-    var targetQuat = new THREE.Quaternion(CURRENT_POSE.quaternion.x, CURRENT_POSE.quaternion.y,
-                                          CURRENT_POSE.quaternion.z, CURRENT_POSE.quaternion.w);
-    targetQuat.multiply(new THREE.Quaternion().setFromAxisAngle(XAXIS, Math.PI));
+    var camRot = views["ThirdPerson"].camera.rotation.clone();
+    oldCameraRot = camRot.clone();
+  
+    targetRot.setFromQuaternion(CURRENT_POSE.quaternion.clone().multiply(XAXISQUAT));
     
     var tween = new TWEEN.Tween(camPosition).to(CURRENT_POSE_OBJECT.position, 2000).easing(TWEEN.Easing.Quadratic.InOut).onUpdate(function () {
           views["ThirdPerson"].camera.position.x = camPosition.x;
           views["ThirdPerson"].camera.position.y = camPosition.y;
           views["ThirdPerson"].camera.position.z = camPosition.z;
-        }).onComplete(function () {
-          params.FirstPerson = true;
-
-          // views["ThirdPerson"].controls.enabled = false;
-          // interactiveView = views["FirstPerson"];
-          // interactiveView.controls.enabled = true;
-          ResetView();  
-          view = views["ThirdPerson"];
-          camera = view.camera;
-          view.updateCamera( camera, scene, mouse.x, mouse.y );
-          camera.updateProjectionMatrix();
-         }).start();
-    var tween = new TWEEN.Tween(camQuat).to(targetQuat, 2000)
+        }).onComplete(function () {}).start();
+    var tween = new TWEEN.Tween(camRot).to(targetRot, 2000)
         .easing(TWEEN.Easing.Linear.None).onUpdate(function () {
            // Need this line otherwise, we get an error
-           camQuat.onChangeCallback = function() {};
-           var newRotation = new THREE.Quaternion(camQuat.x, camQuat.y, camQuat.z, camQuat.w);
-           views["ThirdPerson"].camera.quaternion.x = newRotation.x;
-           views["ThirdPerson"].camera.quaternion.y = newRotation.y;
-           views["ThirdPerson"].camera.quaternion.z = newRotation.z;
-           views["ThirdPerson"].camera.quaternion.w = newRotation.w;
+           camRot.onChangeCallback = function() {};
+           var newRotation = new THREE.Euler(camRot.x, camRot.y, camRot.z);
+           views["ThirdPerson"].camera.rotation.x = newRotation.x;
+           views["ThirdPerson"].camera.rotation.y = newRotation.y;
+           views["ThirdPerson"].camera.rotation.z = newRotation.z;
              }).onComplete(function () {}).start();
   }
     
@@ -921,12 +900,15 @@ function TogglePerspective() {
 window.onload = function() {
   var resetObj = { 'Reset Camera': function(){ ResetView() }};
   var togglePersp = { 'Switch View': function() { TogglePerspective() }}
+  var pers = { test: 0.5 };
 
   gui.add(resetObj,'Reset Camera');
   gui.add(togglePersp,'Switch View');
   gui.add(params, 'Play');
-  gui.add(params, 'CenterImage');
-  gui.add(params, 'FrameRate', 0, MAXFRAMERATE);
+  gui.add(params, 'Top Left Image').onChange(function(value) {
+                                            if (value) document.getElementById("currentImage").style.visibility = 'visible';
+                                            else document.getElementById("currentImage").style.visibility = 'hidden';});
+  gui.add(params, 'Speed', MINFRAMERATE, MAXFRAMERATE);
   // gui.add(interactiveView.camera, 'near', 0.01, 10);
 
   var imageGui = gui.addFolder("Image Viewer");
@@ -936,7 +918,7 @@ window.onload = function() {
 
   var cloudGui = gui.addFolder("Point Cloud");
   cloudGui.add(pointCloud, 'visible').listen();
-  cloudGui.add(pointCloud.material, 'size', 0, 0.3).listen();
+  cloudGui.add(pointCloud.material, 'size', 0, 0.25).listen();
   cloudGui.add(pointCloud.material, 'opacity', 0, 1.0).listen();
   cloudGui.open();
 
