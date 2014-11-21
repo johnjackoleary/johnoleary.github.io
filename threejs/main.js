@@ -904,11 +904,11 @@ function TogglePerspective() {
 // Set up gui
 window.onload = function() {
   var resetObj = { 'Reset Camera': function(){ ResetView() }};
-  var togglePersp = { 'Switch View': function() { TogglePerspective() }}
+  var togglePersp = { 'Toggle POV': function() { TogglePerspective() }}
   var pers = { test: 0.5 };
 
   gui.add(resetObj,'Reset Camera');
-  gui.add(togglePersp,'Switch View');
+  gui.add(togglePersp,'Toggle POV');
   gui.add(params, 'Play');
   gui.add(params, 'Top Left Image').onChange(function(value) {
                                             if (value) document.getElementById("currentImage").style.visibility = 'visible';
@@ -929,7 +929,7 @@ window.onload = function() {
 
   var trajectoriesGui = gui.addFolder("Trajectories");
   for (var i = 0; i < NumberOfTrajectories; i++)
-    trajectoriesGui.add(trajectory_drawing[i].material, 'visible').name("Toggle " + (i+1) );
+    trajectoriesGui.add(trajectory_drawing[i].material, 'visible').name("Show " + (i+1) );
   // trajectoriesGui.open();
 
   var contextGUI = gui.addFolder("Plane and Shadow");
