@@ -796,16 +796,16 @@ function UpdateForNewPose (centerOfPose) {
     var imageScale = 0.5;
     ImageViewer.scale.set(imageScale, imageScale, imageScale);
     ImageViewer.translateZ( - 3.5 );
-
-    var endIndex = Math.min(cameraPoses.length-1, CURRENT_POSE.poseIndex + 15);
-    for (var i = CURRENT_POSE.poseIndex; i < endIndex; i++) { // load the next ten textures
-      if (!cameraPoses[i].imageTexture)
-        cameraPoses[i].imageTexture = THREE.ImageUtils.loadTexture( cameraPoses[i].imagefile );
-    }
-
-    ImageViewer.material.map = CURRENT_POSE.imageTexture;
   }
 
+  var endIndex = Math.min(cameraPoses.length-1, CURRENT_POSE.poseIndex + 15);
+  for (var i = CURRENT_POSE.poseIndex; i < endIndex; i++) { // load the next ten textures
+    if (!cameraPoses[i].imageTexture)
+      cameraPoses[i].imageTexture = THREE.ImageUtils.loadTexture( cameraPoses[i].imagefile );
+  }
+
+  ImageViewer.material.map = CURRENT_POSE.imageTexture;
+  
   // document.getElementById("currentImage").style.visibility = 'visible';
   document.getElementById("currentImage").src = CURRENT_POSE.imagefile;
 }
