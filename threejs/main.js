@@ -853,6 +853,7 @@ function TogglePerspective() {
   // console.log(perspective)
   if (params.FirstPerson) {
     params.FirstPerson = false;
+    views["ThirdPerson"].controls.enabled = true;
     var camPosition = views["ThirdPerson"].camera.position.clone();
     var camRot = views["ThirdPerson"].camera.rotation.clone();
     
@@ -873,6 +874,7 @@ function TogglePerspective() {
 
   } else {
     params.FirstPerson = true;
+    views["ThirdPerson"].controls.enabled = false;
     var camPosition = views["ThirdPerson"].camera.position.clone();
     oldCameraPosition = camPosition.clone();
     var camRot = views["ThirdPerson"].camera.rotation.clone();
