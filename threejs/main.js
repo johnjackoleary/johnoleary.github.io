@@ -27,7 +27,6 @@ var views = {
             // camera.position.x = Math.max( Math.min( camera.position.x, 2000 ), -2000 );
             if (CURRENT_POSE && params.FirstPerson) {
               camera.position.set(CURRENT_POSE.position.x, CURRENT_POSE.position.y, CURRENT_POSE.position.z)
-              var camera_array_index = CURRENT_POSE.poseIndex * 16;
               camera.quaternion.set(CURRENT_POSE.quaternion.x, CURRENT_POSE.quaternion.y, 
                                      CURRENT_POSE.quaternion.z, CURRENT_POSE.quaternion.w);
               camera.rotateOnAxis(XAXIS, Math.PI);
@@ -149,14 +148,14 @@ function init() {
   light = new THREE.AmbientLight( 0x222222 );
   scene.add( light );
 
-  // Camera setup
-  ResetView();
-
   // renderer
   renderer = Detector.webgl ? new THREE.WebGLRenderer({ antialias: true}) : alert("Your browser does not support WebGL.\nYou may be able to enable it on Safari or Firefox.\nIt should work by default on Google Chrome.");
   renderer.setClearColor( 0x000000, 1 );
   renderer.setSize( containerWidth, containerHeight );
   // renderer.enableScissorTest ( true );
+
+  // Camera setup
+  ResetView();
 
   container.appendChild( renderer.domElement );
 
@@ -170,7 +169,6 @@ function init() {
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
   UpdateForNewPose(cameraPoses[0]);
-  interactiveView.controls.update();
 }
 
 function updateMouse(event) {
@@ -453,12 +451,12 @@ function createTrajectory() {
     traj_geo.faceVertexUvs[0] = [];
     
     // Set up camera_poses geometry
-    for ( var i = 0; i < camera_poses[trajNum].length; i+=16) {
-      var currentIndex = 2 * (i/16);
-      var currentPoint = new THREE.Vector3(camera_poses[trajNum][i + 13], camera_poses[trajNum][i + 14], camera_poses[trajNum][i + 15]);
+    for ( var i = 0; i < camera_poses[trajNum].length; i+=7) {
+      var currentIndex = 2 * (i/7);
+      var currentPoint = new THREE.Vector3(camera_poses[trajNum][i + 4], camera_poses[trajNum][i + 5], camera_poses[trajNum][i + 6]);
       var currentQuat = new THREE.Quaternion(-camera_poses[trajNum][i], -camera_poses[trajNum][i+1], -camera_poses[trajNum][i+2], camera_poses[trajNum][i+3]);
-      var previousPoint = new THREE.Vector3(camera_poses[trajNum][i + 13 - 16], camera_poses[trajNum][i + 14 - 16], camera_poses[trajNum][i + 15 - 16]);
-      var previousQuat = new THREE.Quaternion(-camera_poses[trajNum][i - 16], -camera_poses[trajNum][i+1 - 16], -camera_poses[trajNum][i+2 - 16], camera_poses[trajNum][i+3 - 16]);
+      var previousPoint = new THREE.Vector3(camera_poses[trajNum][i + 4 - 7], camera_poses[trajNum][i + 5 - 7], camera_poses[trajNum][i + 6 - 7]);
+      var previousQuat = new THREE.Quaternion(-camera_poses[trajNum][i - 7], -camera_poses[trajNum][i+1 - 7], -camera_poses[trajNum][i+2 - 7], camera_poses[trajNum][i+3 - 7]);
       
       var point1 = currentPoint.clone();
       var point2 = currentPoint.clone();
@@ -615,10 +613,10 @@ function createTrajectory() {
 function createPoses () {
   var sphereGeometry = new THREE.SphereGeometry( 0.1 );
   for (var trajNum = 0; trajNum < camera_poses.length; trajNum++) {
-    var totalPoses = camera_poses[trajNum].length/16;
+    var totalPoses = camera_poses[trajNum].length/7;
     for ( var i = 0; i < totalPoses; i++) {
       // Add the core of the object
-      var camera_array_index = i * 16;
+      var camera_array_index = i * 7;
       var image_num = i * intervalBetweenPoses + startingImageId[trajNum];
       var material = new THREE.MeshLambertMaterial( { color: 0x000000, transparent: true } );
       var centerPose = new THREE.Mesh( sphereGeometry, material );
@@ -628,9 +626,9 @@ function createPoses () {
       // centerPose.poseError = fake_pose_error[centerPose.poseIndex]; // just for testing purposes
       centerPose.poseError = [0.8, 0.5, 1.4, 0.7, 0.2, 1.3];
       // centerPose.imageTexture = THREE.ImageUtils.loadTexture( centerPose.imagefile );
-      centerPose.position.set(camera_poses[trajNum][camera_array_index + 13] + sceneTranslationVector.x, 
-                              camera_poses[trajNum][camera_array_index + 14] + sceneTranslationVector.y, 
-                              camera_poses[trajNum][camera_array_index + 15] + sceneTranslationVector.z);
+      centerPose.position.set(camera_poses[trajNum][camera_array_index + 4] + sceneTranslationVector.x, 
+                              camera_poses[trajNum][camera_array_index + 5] + sceneTranslationVector.y, 
+                              camera_poses[trajNum][camera_array_index + 6] + sceneTranslationVector.z);
       centerPose.quaternion.set(-camera_poses[trajNum][camera_array_index], 
                                 -camera_poses[trajNum][camera_array_index + 1], 
                                 -camera_poses[trajNum][camera_array_index + 2], 
@@ -736,7 +734,7 @@ function createPointCloud() {
 
   // material
   var material = new THREE.PointCloudMaterial( {
-      size: 0.05,
+      size: 0.1,
       transparent: true,
       opacity: 0.4,
       vertexColors: THREE.VertexColors
@@ -841,6 +839,8 @@ function ResetView() {
   interactiveView = views["ThirdPerson"];
   frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
   // interactiveView.controls.reset();
+  if (renderer)
+    interactiveView.controls.update();
 }
 
 function GetImageFile(id) {
@@ -870,11 +870,12 @@ function TogglePerspective() {
       views["ThirdPerson"].camera.rotation.x = newRotation.x;
       views["ThirdPerson"].camera.rotation.y = newRotation.y;
       views["ThirdPerson"].camera.rotation.z = newRotation.z;
-    }).onComplete(function () {}).start();
+    }).onComplete(function () { pointCloud.material.size = 0.1; }).start();
 
   } else {
     params.FirstPerson = true;
     views["ThirdPerson"].controls.enabled = false;
+    pointCloud.material.size = 0.05; 
     var camPosition = views["ThirdPerson"].camera.position.clone();
     oldCameraPosition = camPosition.clone();
     var camRot = views["ThirdPerson"].camera.rotation.clone();
@@ -895,7 +896,7 @@ function TogglePerspective() {
            views["ThirdPerson"].camera.rotation.x = newRotation.x;
            views["ThirdPerson"].camera.rotation.y = newRotation.y;
            views["ThirdPerson"].camera.rotation.z = newRotation.z;
-             }).onComplete(function () {}).start();
+             }).onComplete(function () { }).start();
   }
     
 }
@@ -915,7 +916,7 @@ window.onload = function() {
   gui.add(params, 'Speed', MINFRAMERATE, MAXFRAMERATE);
   // gui.add(interactiveView.camera, 'near', 0.01, 10);
 
-  var imageGui = gui.addFolder("Image Viewer");
+  var imageGui = gui.addFolder("Camera Image Viewer");
   imageGui.add(ImageViewer, 'visible');
   imageGui.add(ImageViewer.material, 'opacity', 0, 1.0);
   imageGui.open();

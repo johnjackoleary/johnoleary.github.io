@@ -23,16 +23,20 @@ def main():
   with open(sys.argv[1]) as infile:
     outfile = open(variable+'.js', 'w')
     outfile.write("var " + variable + " = [")
-
+    count = -1;
     lines = [x.strip() for x in infile.readlines()]
     for line in lines:
+      count += 1
+      count = count % 16
+      if count in [4,5,6,7,8,9,10,11,12]:
+        continue
       line = line.split(' ')
-      if len(line) > 1:
-        outfile.write("[")
+      # if len(line) > 1:
+      #   outfile.write("[")
       for item in [x.strip() for x in line]:
         outfile.write(""+item+",");
-      if len(line) > 1:
-        outfile.write("],");
+      # if len(line) > 1:
+      #   outfile.write("],");
 
     outfile.write("]\n");
     outfile.close()
