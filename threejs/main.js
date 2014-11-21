@@ -170,6 +170,7 @@ function init() {
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
   UpdateForNewPose(cameraPoses[0]);
+  interactiveView.controls.update();
 }
 
 function updateMouse(event) {
@@ -227,6 +228,7 @@ function onDocumentMouseMove( event )
   // update the mouse variable
   updateMouse(event);
 
+  if (params.FirstPerson) return;
    // create a Ray with origin at the mouse position
   //   and direction into the scene (views["ThirdPerson"].camera direction)
   var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
@@ -838,7 +840,7 @@ function ResetView() {
   // views["FirstPerson"].controls.enabled = false;
   interactiveView = views["ThirdPerson"];
   frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
-  // interactiveView.controls.enabled = true;
+  // interactiveView.controls.reset();
 }
 
 function GetImageFile(id) {
