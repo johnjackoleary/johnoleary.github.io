@@ -769,14 +769,6 @@ function UpdateForNewPose (centerOfPose) {
   CURRENT_POSE.material.color.setHex(0xffff00);
 
   CURRENT_POSE_OBJECT.visible = true;
-  // if (oldPose)
-  //   CURRENT_POSE_OBJECT.applyMatrix( new THREE.Matrix4().makeScale( CURRENT_POSE.poseError[0]/oldPose.poseError[0], 
-  //                                                                 CURRENT_POSE.poseError[1]/oldPose.poseError[1], 
-  //                                                                 CURRENT_POSE.poseError[2]/oldPose.poseError[2] ));
-  // else 
-    // CURRENT_POSE_OBJECT.applyMatrix( new THREE.Matrix4().makeScale( CURRENT_POSE.poseError[0], 
-    //                                                               CURRENT_POSE.poseError[1], 
-    //                                                               CURRENT_POSE.poseError[2] ));
 
   CURRENT_POSE_OBJECT.scale.set(CURRENT_POSE.poseError[0], CURRENT_POSE.poseError[1], CURRENT_POSE.poseError[2]);
 
