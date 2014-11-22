@@ -828,6 +828,7 @@ function ResetView() {
     camera.updateProjectionMatrix();
   }
   params.FirstPerson = false;
+  views["ThirdPerson"].controls.enabled = true;
   // views["FirstPerson"].controls.enabled = false;
   interactiveView = views["ThirdPerson"];
   frustumHeight = 2 * Math.tan(interactiveView.camera.fov * (Math.PI/180) / 2) * interactiveView.camera.near;
