@@ -149,10 +149,11 @@ function init() {
   scene.add( light );
 
   // renderer
-  renderer = Detector.webgl ? new THREE.WebGLRenderer({ antialias: true}) : alert("Your browser does not support WebGL.\nYou may be able to enable it on Safari or Firefox.\nIt should work by default on Google Chrome.");
+  renderer = Detector.webgl ? new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true}) : alert("Your browser does not support WebGL.\nYou may be able to enable it on Safari or Firefox.\nIt should work by default on Google Chrome.");
   renderer.setClearColor( 0x000000, 1 );
   renderer.setSize( containerWidth, containerHeight );
   // renderer.enableScissorTest ( true );
+  THREEx.Screenshot.bindKey(renderer);
 
   // Camera setup
   ResetView();
@@ -726,8 +727,8 @@ function createPointCloud() {
   var colors = [];
   for( var i = 0; i < point_cloud_geo.vertices.length; i++ ) {
       colors[i] = new THREE.Color();
-      // colors[i].setRGB(point_cloud[i][3]/255.0, point_cloud[i][4]/255.0, point_cloud[i][5]/255.0);
-      colors[i].setRGB(1,1,1);
+      colors[i].setRGB(point_cloud[i][3]/255.0, point_cloud[i][4]/255.0, point_cloud[i][5]/255.0);
+      // colors[i].setRGB(1,1,1);
   }
   point_cloud_geo.colors = colors;
 
